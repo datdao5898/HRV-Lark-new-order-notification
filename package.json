@@ -1,0 +1,20 @@
+{
+  "name": "haravan-lark-notify",
+  "version": "1.0.0",
+  "description": "Nhận webhook đơn hàng mới từ Haravan và gửi thông báo vào nhóm Lark",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "test:lark": "node scripts/test-lark.js",
+    "list-chats": "node scripts/list-chats.js",
+    "demo-orders": "node scripts/demo-real-orders.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0"
+  }
+}
