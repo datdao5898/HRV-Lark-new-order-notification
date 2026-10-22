@@ -5,6 +5,7 @@ const haravan = require('./haravan');
 const lark = require('./lark');
 const { buildOrderCard } = require('./orderCard');
 const { startPolling } = require('./poller');
+const { getShops } = require('./shops');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -104,11 +105,11 @@ app.post('/haravan/webhook', express.raw({ type: '*/*', limit: '5mb' }), (req, r
         if (Date.now() - new Date(order.created_at) > 6 * 60 * 60 * 1000) {
           return console.warn(`[orders/create] Bỏ qua đơn cũ ${order.name} (HMAC sai)`);
         }
-        return handleNewOrder(orgId, order);
+        return handleNewOrder(order);
       })
       .catch((e) => console.error('[orders/create] Không xác minh được đơn qua API:', e.message));
   } else if (topic === 'orders/create') {
-    handleNewOrder(orgId, payload).catch((e) => console.error('[orders/create]', e.message));
+    handleNewOrder(payload).catch((e) => console.error('[orders/create]', e.message));
   } else if (topic === 'app/uninstalled') {
     console.log(`[webhook] Shop ${orgId} đã gỡ app`);
   } else {
@@ -116,21 +117,26 @@ app.post('/haravan/webhook', express.raw({ type: '*/*', limit: '5mb' }), (req, r
   }
 });
 
-async function handleNewOrder(orgId, order) {
-  // Khoá theo id đơn (không theo header org) để header giả không lách được chống trùng
-  if (alreadySeen(String(order.id))) return;
+// Webhook (app Partner) luôn thuộc shop chính
+const DEFAULT_SHOP = {
+  key: 'default',
+  name: process.env.SHOP_NAME || '',
+  domain: process.env.HARAVAN_SHOP_DOMAIN || null,
+};
 
-  // Domain admin dạng <ten-shop>.myharavan.com để gắn nút "Xem đơn" (không bắt buộc)
-  const shopDomain = process.env.HARAVAN_SHOP_DOMAIN || null;
+async function handleNewOrder(order, shop = DEFAULT_SHOP) {
+  // Khoá theo shop + id đơn (không theo header org) để header giả không lách được chống trùng
+  const key = `${shop.key}:${order.id}`;
+  if (alreadySeen(key)) return;
 
-  const card = buildOrderCard(order, shopDomain);
+  const card = buildOrderCard(order, shop.domain, shop.name);
   try {
     await lark.sendCard(process.env.LARK_CHAT_ID, card);
   } catch (e) {
-    seen.delete(String(order.id)); // gửi lỗi thì cho phép gửi lại ở lần sau
+    seen.delete(key); // gửi lỗi thì cho phép gửi lại ở lần sau
     throw e;
   }
-  console.log(`[orders/create] Đã báo Lark đơn ${order.name}`);
+  console.log(`[orders/create] Đã báo Lark đơn ${order.name}${shop.name ? ` (${shop.name})` : ''}`);
 }
 
 app.listen(PORT, () => {
@@ -139,11 +145,12 @@ app.listen(PORT, () => {
   console.log(`  Webhook URL:       ${process.env.PUBLIC_URL}/haravan/webhook`);
 });
 
-// Có private token thì tự quét đơn mới, không phụ thuộc webhook
-if (process.env.HARAVAN_ACCESS_TOKEN) {
+// Có private token (1 hoặc nhiều shop) thì tự quét đơn mới, không phụ thuộc webhook
+const pollShops = getShops();
+if (pollShops.length) {
   startPolling({
-    token: process.env.HARAVAN_ACCESS_TOKEN,
+    shops: pollShops,
     intervalSeconds: Math.max(15, Number(process.env.POLL_INTERVAL_SECONDS) || 60),
-    onOrder: (order) => handleNewOrder(null, order),
+    onOrder: (order, shop) => handleNewOrder(order, shop),
   });
 }

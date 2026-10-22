@@ -23,6 +23,6 @@ const fakeOrder = {
   ],
 };
 
-sendCard(process.env.LARK_CHAT_ID, buildOrderCard(fakeOrder, 'demo.myharavan.com'))
+sendCard(process.env.LARK_CHAT_ID, buildOrderCard(fakeOrder, 'demo.myharavan.com', process.env.SHOP_NAME))
   .then(() => console.log('✅ Đã gửi card thử vào Lark'))
   .catch((e) => { console.error('❌', e.message); process.exit(1); });

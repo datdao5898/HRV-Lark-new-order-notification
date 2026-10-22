@@ -5,7 +5,8 @@ function fmtTime(iso) {
   return new Date(iso).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
-function buildOrderCard(order, shopName) {
+// shopDomain: domain admin để gắn nút "Xem đơn"; shopLabel: tên shop hiện trên tiêu đề
+function buildOrderCard(order, shopDomain, shopLabel) {
   const c = order.customer || {};
   const ship = order.shipping_address || order.billing_address || {};
   const name =
@@ -23,8 +24,8 @@ function buildOrderCard(order, shopName) {
     })
     .join('\n') || '—';
 
-  const adminUrl = order.id && shopName
-    ? `https://${shopName}/admin/orders/${order.id}`
+  const adminUrl = order.id && shopDomain
+    ? `https://${shopDomain}/admin/orders/${order.id}`
     : null;
 
   const elements = [
@@ -53,7 +54,7 @@ function buildOrderCard(order, shopName) {
     config: { wide_screen_mode: true },
     header: {
       template: 'green',
-      title: { tag: 'plain_text', content: `🛒 Đơn hàng mới ${order.name || ''}`.trim() },
+      title: { tag: 'plain_text', content: `🛒 Đơn hàng mới ${order.name || ''}${shopLabel ? ` · ${shopLabel}` : ''}`.trim() },
     },
     elements,
   };
