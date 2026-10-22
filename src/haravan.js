@@ -78,7 +78,8 @@ function computeHmac(rawBody) {
 
 // So sánh HMAC SHA256 (base64) của raw body với header X-Haravan-Hmacsha256
 function verifyHmac(rawBody, hmacHeader) {
-  if (!hmacHeader) return false;
+  // Không có secret thì không tin webhook nào (tránh ký giả bằng khoá rỗng)
+  if (!hmacHeader || !(process.env.HARAVAN_APP_SECRET || '').trim()) return false;
   const a = Buffer.from(computeHmac(rawBody));
   const b = Buffer.from(hmacHeader.trim());
   return a.length === b.length && crypto.timingSafeEqual(a, b);
