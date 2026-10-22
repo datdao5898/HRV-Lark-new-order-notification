@@ -4,6 +4,7 @@ const express = require('express');
 const haravan = require('./haravan');
 const lark = require('./lark');
 const { buildOrderCard } = require('./orderCard');
+const { startPolling } = require('./poller');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -122,7 +123,12 @@ async function handleNewOrder(orgId, order) {
   const shopDomain = process.env.HARAVAN_SHOP_DOMAIN || null;
 
   const card = buildOrderCard(order, shopDomain);
-  await lark.sendCard(process.env.LARK_CHAT_ID, card);
+  try {
+    await lark.sendCard(process.env.LARK_CHAT_ID, card);
+  } catch (e) {
+    seen.delete(String(order.id)); // gửi lỗi thì cho phép gửi lại ở lần sau
+    throw e;
+  }
   console.log(`[orders/create] Đã báo Lark đơn ${order.name}`);
 }
 
@@ -131,3 +137,12 @@ app.listen(PORT, () => {
   console.log(`  Cài app cho shop:  ${process.env.PUBLIC_URL}/haravan/install`);
   console.log(`  Webhook URL:       ${process.env.PUBLIC_URL}/haravan/webhook`);
 });
+
+// Có private token thì tự quét đơn mới, không phụ thuộc webhook
+if (process.env.HARAVAN_ACCESS_TOKEN) {
+  startPolling({
+    token: process.env.HARAVAN_ACCESS_TOKEN,
+    intervalSeconds: Math.max(15, Number(process.env.POLL_INTERVAL_SECONDS) || 60),
+    onOrder: (order) => handleNewOrder(null, order),
+  });
+}

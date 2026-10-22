@@ -6,6 +6,14 @@ Khách đặt đơn trên Haravan → webhook `orders/create` → server này �
 Haravan ──(POST orders/create, ký HMAC)──▶ /haravan/webhook ──▶ Lark bot ──▶ Nhóm Lark
 ```
 
+## Cách nhanh: chỉ dùng private token (không cần webhook)
+
+1. Admin Haravan → **Ứng dụng → Ứng dụng riêng** → tạo app, cấp quyền **đọc đơn hàng**, copy Access token.
+2. Điền `HARAVAN_ACCESS_TOKEN` (và `LARK_*`) vào `.env`, chạy `npm start`.
+3. App quét đơn mới mỗi `POLL_INTERVAL_SECONDS` giây (mặc định 60) và báo Lark. Lần chạy đầu chỉ ghi nhớ đơn mới nhất, không báo dồn đơn cũ; đơn đã báo được nhớ trong `data/poll-state.json` nên khởi động lại không trùng, và server tắt một lúc thì bật lại sẽ báo bù.
+
+Không cần `PUBLIC_URL`, Haravan Partner hay `/haravan/install`. Phần webhook bên dưới chỉ cần khi muốn báo tức thì.
+
 ## 1. Cài đặt
 
 Yêu cầu Node.js ≥ 18.
@@ -76,6 +84,7 @@ Cập nhật code về sau: chép file mới vào `/opt/haravan-lark-notify` r�
 ```
 src/server.js      Express: /haravan/install, /haravan/callback, /haravan/webhook
 src/haravan.js     OAuth, subscribe webhook, verify HMAC, lưu token shop
+src/poller.js      Quét đơn mới bằng private token
 src/lark.js        tenant_access_token (có cache) + gửi message card
 src/orderCard.js   Dựng card Lark từ payload đơn hàng
 scripts/           test-lark.js, list-chats.js
