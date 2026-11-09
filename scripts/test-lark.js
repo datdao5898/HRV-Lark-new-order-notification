@@ -13,6 +13,13 @@ const fakeOrder = {
   gateway: 'COD',
   note: 'Giao giờ hành chính',
   shipping_lines: [{ price: 35000 }],
+  // Nguồn đơn giả lập: khách bấm quảng cáo Facebook có gắn UTM
+  source: 'web',
+  utm_source: 'facebook',
+  utm_medium: 'cpc',
+  utm_campaign: 'demo-chien-dich',
+  utm_content: 'video-1',
+  landing_site: '/products/ao-thun-basic',
   shipping_address: {
     name: 'Nguyễn Văn A', phone: '0901234567',
     address1: '182 Lê Đại Hành', ward: 'Phường 15', district: 'Quận 11', province: 'Hồ Chí Minh',

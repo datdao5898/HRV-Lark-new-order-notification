@@ -73,6 +73,19 @@ Xong. Đặt thử 1 đơn trên website → Lark nhận card gồm mã đơn, t
 
 Cập nhật code về sau: chép file mới vào `/opt/haravan-lark-notify` rồi `pm2 restart haravan-lark`.
 
+## Nguồn đơn (tracking quảng cáo)
+
+Card hiện dòng **Nguồn** và **Trang vào đầu tiên**, lấy từ các trường Haravan tự ghi trên đơn (`src/orderSource.js`):
+UTM → kênh bán (Google Shopping, POS...) → trang giới thiệu (Google, Facebook, ChatGPT...) → còn lại là "Truy cập trực tiếp".
+
+Khi chạy quảng cáo, gắn UTM vào link để card hiện đúng chiến dịch:
+
+- **Facebook Ads** → ô *URL parameters*: `utm_source=facebook&utm_medium=cpc&utm_campaign={{campaign.name}}&utm_content={{ad.name}}`
+- **Google Ads** → *Final URL suffix* (cấp tài khoản): `utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}&utm_content={creative}`
+- **TikTok Ads**: `utm_source=tiktok&utm_medium=cpc&utm_campaign=__CAMPAIGN_NAME__&utm_content=__CID_NAME__`
+
+`utm_medium` là `cpc`/`paid`/`ads`... thì card ghi "Facebook Ads", "Google Ads". Haravan ghi nguồn theo lượt truy cập dẫn tới đơn, và không lưu `gclid`/`fbclid`.
+
 ## Ghi chú vận hành
 
 - Mọi webhook đều được kiểm tra header `X-Haravan-Hmacsha256` (HMAC-SHA256 base64 của raw body, khoá = App Secret); sai chữ ký trả 401.
@@ -90,5 +103,6 @@ src/poller.js      Quét đơn mới bằng private token (nhiều shop)
 src/shops.js       Đọc danh sách shop + token từ .env
 src/lark.js        tenant_access_token (có cache) + gửi message card
 src/orderCard.js   Dựng card Lark từ payload đơn hàng
+src/orderSource.js Xác định nguồn đơn (UTM, kênh bán, trang giới thiệu)
 scripts/           test-lark.js, list-chats.js
 ```

@@ -1,5 +1,7 @@
 // Dựng Lark message card từ payload đơn hàng Haravan
-// Chỉ hiện: mã đơn, thời gian đặt, họ tên, SĐT, địa chỉ, sản phẩm
+// Hiện: mã đơn, thời gian đặt, họ tên, SĐT, địa chỉ, nguồn đơn, sản phẩm
+const { describeSource, landingPage } = require('./orderSource');
+
 function fmtTime(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -24,6 +26,11 @@ function buildOrderCard(order, shopDomain, shopLabel) {
     })
     .join('\n') || '—';
 
+  const src = describeSource(order, shopDomain, shopLabel);
+  const sourceLines = [`**Nguồn:** ${src.icon} ${src.text}${src.details.length ? ` · ${src.details.join(' · ')}` : ''}`];
+  const landing = landingPage(order);
+  if (landing) sourceLines.push(`**Trang vào đầu tiên:** ${landing}`);
+
   const adminUrl = order.id && shopDomain
     ? `https://${shopDomain}/admin/orders/${order.id}`
     : null;
@@ -39,6 +46,7 @@ function buildOrderCard(order, shopDomain, shopLabel) {
       ],
     },
     { tag: 'div', text: { tag: 'lark_md', content: `**Địa chỉ:** ${address}` } },
+    { tag: 'div', text: { tag: 'lark_md', content: sourceLines.join('\n') } },
     { tag: 'hr' },
     { tag: 'div', text: { tag: 'lark_md', content: `**Sản phẩm:**\n${items}` } },
   ];
